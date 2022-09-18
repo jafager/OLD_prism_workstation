@@ -1,0 +1,58 @@
+---
+
+- name: Configure prism Linux workstation
+  hosts: localhost
+  become: yes
+  tasks:
+
+    - name: Allow sudo without password
+      ansible.builtin.copy:
+        dest: /etc/sudoers.d/jafager
+        owner: root
+        group: root
+        mode: 0644
+        content: |
+          jafager ALL = (ALL) NOPASSWD: ALL
+
+    - name: Create SSH directory
+      ansible.builtin.file:
+        path: /home/jafager/.ssh
+        mode: 0700
+        state: directory
+      become: no
+
+    - name: Generate SSH key
+      ansible.builtin.command:
+        cmd: ssh-keygen -f /home/jafager/.ssh/id_rsa -C 'jafager@prism' -N ''
+        creates: /home/jafager/.ssh/id_rsa
+      become: no
+
+    - name: Set environment variable EDITOR
+      ansible.builtin.lineinfile:
+        path: /home/jafager/.bashrc
+        regexp: '^\s*export\s+EDITOR\s*=.*$'
+        line: 'export EDITOR=vim'
+
+    - name: Set environment variable VISUAL
+      ansible.builtin.lineinfile:
+        path: /home/jafager/.bashrc
+        regexp: '^\s*export\s+VISUAL\s*=.*$'
+        line: 'export VISUAL="$EDITOR"'
+
+    - name: Upgrade packages
+      ansible.builtin.apt:
+        name: '*'
+        state: latest
+        update_cache: yes
+
+    - name: Install minimal desktop
+      ansible.builtin.apt:
+        name: ubuntu-desktop-minimal
+
+    - name: Install chromium web browser
+      community.general.snap:
+        name: chromium
+
+    - name: Install graphics drivers
+      ansible.builtin.apt:
+        name: nvidia-driver-515
