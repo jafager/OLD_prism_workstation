@@ -32,12 +32,14 @@
         path: /home/jafager/.bashrc
         regexp: '^\s*export\s+EDITOR\s*=.*$'
         line: 'export EDITOR=vim'
+      become: no
 
     - name: Set environment variable VISUAL
       ansible.builtin.lineinfile:
         path: /home/jafager/.bashrc
         regexp: '^\s*export\s+VISUAL\s*=.*$'
         line: 'export VISUAL="$EDITOR"'
+      become: no
 
     - name: Upgrade packages
       ansible.builtin.apt:
@@ -53,6 +55,8 @@
       community.general.snap:
         name: chromium
 
-    - name: Install graphics drivers
-      ansible.builtin.apt:
-        name: nvidia-driver-515
+    - name: Install recommended drivers
+      ansible.builtin.command:
+        cmd: ubuntu-drivers install --recommended
+      register: install_recommended_drivers
+      changed_when: not install_recommended_drivers.stdout == 'All the available drivers are already installed.'
