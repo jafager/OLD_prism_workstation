@@ -5,6 +5,36 @@
   become: yes
   tasks:
 
+
+    ### Updates
+
+    - name: Upgrade packages
+      ansible.builtin.apt:
+        name: '*'
+        state: latest
+        update_cache: yes
+
+
+    ### Replicate init_ansible.sh script
+
+    - name: Install ansible prerequisites
+      ansible.builtin.apt:
+        name: '{{ item }}'
+      loop:
+        - software-properties-common
+
+    - name: Install ansible repository
+      ansible.builtin.apt_repository:
+        repo: ppa:ansible/ansible
+
+    - name: Install ansible
+      ansible.builtin.apt:
+        name: ansible
+        update_cache: yes
+
+
+    ### Configure jafager user
+
     - name: Allow sudo without password
       ansible.builtin.copy:
         dest: /etc/sudoers.d/jafager
@@ -41,12 +71,9 @@
         line: 'export VISUAL="$EDITOR"'
       become: no
 
-    - name: Upgrade packages
-      ansible.builtin.apt:
-        name: '*'
-        state: latest
-        update_cache: yes
 
+    ### Desktop
+    
     - name: Install minimal desktop
       ansible.builtin.apt:
         name: ubuntu-desktop-minimal
@@ -60,3 +87,27 @@
         cmd: ubuntu-drivers install --recommended
       register: install_recommended_drivers
       changed_when: not install_recommended_drivers.stdout == 'All the available drivers are already installed.'
+
+
+    ### Terraform
+
+    - name: Install terraform dependencies
+      ansible.builtin.apt:
+        name: '{{ item }}'
+      loop:
+        - gnupg
+        - software-properties-common
+        - curl
+
+    - name: Add terraform repository key
+      ansible.builtin.apt_key:
+        url: https://apt.releases.hashicorp.com/gpg
+
+    - name: Add terraform repository
+      ansible.builtin.apt_repository:
+        repo: deb [arch=amd64] https://apt.releases.hashicorp.com jammy main
+
+    - name: Install terraform
+      ansible.builtin.apt:
+        name: terraform
+        update_cache: yes
