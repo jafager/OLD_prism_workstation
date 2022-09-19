@@ -111,3 +111,62 @@
       ansible.builtin.apt:
         name: terraform
         update_cache: yes
+
+    ### KVM
+    
+    - name: Install libvirt packages
+      ansible.builtin.apt:
+        name: '{{ item }}'
+      loop:
+        - libvirt-daemon
+        - libvirt-daemon-system
+
+    - name: Configure libvirt service
+      ansible.builtin.service:
+        name: libvirtd
+        state: started
+        enabled: yes
+
+    - name: Give jafager user access to KVM
+      ansible.builtin.user:
+        name: jafager
+        groups: libvirt
+        append: yes
+
+    - name: Create logical volume for libvirt storage pool
+      community.general.lvol:
+        vg: rootvg
+        lv: libvirt
+        size: 64g
+
+    - name: Create filesystem for libvirt storage pool
+      community.general.filesystem:
+        fstype: ext4
+        dev: /dev/rootvg/libvirt
+
+    - name: Mount filesystem for libvirt storage pool
+      ansible.posix.mount:
+        path: /srv/libvirt
+        src: /dev/rootvg/libvirt
+        state: mounted
+        fstype: ext4
+
+    - name: Set permissions on libvirt storage pool directory
+      ansible.builtin.file:
+        path: /srv/libvirt
+        owner: root
+        group: root
+        mode: 0755
+        state: directory
+
+    - name: Change QEMU default user
+      ansible.builtin.lineinfile:
+        path: /etc/libvirt/qemu.conf
+        regexp: '^\s*user\s*=.*$'
+        line: 'user=libvirt-qemu'
+
+    - name: Change QEMU default group
+      ansible.builtin.lineinfile:
+        path: /etc/libvirt/qemu.conf
+        regexp: '^\s*group\s*=.*$'
+        line: 'group=kvm'
