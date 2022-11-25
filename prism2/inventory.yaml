@@ -1,0 +1,8 @@
+all:
+  hosts:
+    prism:
+      ansible_connection: local
+    test1:
+      ansible_host: 192.168.122.31
+  vars:
+    ansible_become: yes
